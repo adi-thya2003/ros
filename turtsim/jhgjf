@@ -1,0 +1,42 @@
+import rclpy
+from std_msgs.msg import Int16MultiArray
+import pyaudio
+import numpy as np
+
+def audio_capture_node():
+    rclpy.init()
+    node = rclpy.create_node('audio_capture_node')
+    audio_publisher = node.create_publisher(Int16MultiArray, 'audio_data', 10)
+
+    # Audio parameters
+    sample_rate = 16000
+    num_channels = 1
+    chunk_size = 32768  # Adjust this based on your requirements
+
+    p = pyaudio.PyAudio()
+    stream = p.open(format=pyaudio.paInt16,
+                    channels=num_channels,
+                    rate=sample_rate,
+                    input=True,
+                    frames_per_buffer=chunk_size)
+
+    while rclpy.ok():
+        audio_data = np.frombuffer(stream.read(chunk_size), dtype=np.int16)
+        audio_msg = Int16MultiArray(data=audio_data)
+        audio_publisher.publish(audio_msg)
+
+    stream.stop_stream()
+    stream.close()
+    p.terminate()
+
+    node.destroy_node()
+    rclpy.shutdown()
+
+def main(args=None):
+    audio_capture_node()
+
+if __name__ == '__main__':
+    main()
+
+
+
